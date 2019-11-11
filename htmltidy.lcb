@@ -1,0 +1,203 @@
+library community.livecode.trevordevor.htmltidy
+
+  use com.livecode.engine
+  use com.livecode.foreign
+
+  metadata title is "HTML Tidy"
+  metadata author is "Trevor DeVore"
+  metadata version is "0.0.1"
+
+  public type TidyDoc is Pointer // to struct
+  public type Ctmbstr is Pointer
+
+  constant kOptions is { \
+    "TidyUnknownOption" : 0, \
+    "TidyAccessibilityCheckLevel" : 1, \
+    "TidyAltText" : 2, \
+    "TidyAnchorAsName" : 3, \
+    "TidyAsciiChars" : 4, \
+    "TidyBlockTags" : 5, \
+    "TidyBodyOnly" : 6, \
+    "TidyBreakBeforeBR" : 7, \
+    "TidyCharEncoding" : 8, \
+    "TidyCoerceEndTags" : 9, \
+    "TidyCSSPrefix" : 10, \
+    "TidyCustomTags" : 11, \
+    "TidyDecorateInferredUL" : 12, \
+    "TidyDoctype" : 13, \
+    "TidyDoctypeMode" : 14, \
+    "TidyDropEmptyElems" : 15, \
+    "TidyDropEmptyParas" : 16, \
+    "TidyDropPropAttrs" : 17, \
+    "TidyDuplicateAttrs" : 18, \
+    "TidyEmacs" : 19, \
+    "TidyEmacsFile" : 20, \
+    "TidyEmptyTags" : 21, \
+    "TidyEncloseBlockText" : 22, \
+    "TidyEncloseBodyText" : 23, \
+    "TidyErrFile" : 24, \
+    "TidyEscapeCdata" : 25, \
+    "TidyEscapeScripts" : 26, \
+    "TidyFixBackslash" : 27, \
+    "TidyFixComments" : 28, \
+    "TidyFixUri" : 29, \
+    "TidyForceOutput" : 30, \
+    "TidyGDocClean" : 31, \
+    "TidyHideComments" : 32, \
+    "TidyHtmlOut" : 33, \
+    "TidyInCharEncoding" : 34, \
+    "TidyIndentAttributes" : 35, \
+    "TidyIndentCdata" : 36, \
+    "TidyIndentContent" : 37, \
+    "TidyIndentSpaces" : 38, \
+    "TidyInlineTags" : 39, \
+    "TidyJoinClasses" : 40, \
+    "TidyJoinStyles" : 41, \
+    "TidyKeepFileTimes" : 42, \
+    "TidyKeepTabs" : 43, \
+    "TidyLiteralAttribs" : 44, \
+    "TidyLogicalEmphasis" : 45, \
+    "TidyLowerLiterals" : 46, \
+    "TidyMakeBare" : 47, \
+    "TidyMakeClean" : 48, \
+    "TidyMark" : 49, \
+    "TidyMergeDivs" : 50, \
+    "TidyMergeEmphasis" : 51, \
+    "TidyMergeSpans" : 52, \
+    "TidyMetaCharset" : 53, \
+    "TidyMuteReports" : 54, \
+    "TidyMuteShow" : 55, \
+    "TidyNCR" : 56, \
+    "TidyNewline" : 57, \
+    "TidyNumEntities" : 58, \
+    "TidyOmitOptionalTags" : 59, \
+    "TidyOutCharEncoding" : 60, \
+    "TidyOutFile" : 61, \
+    "TidyOutputBOM" : 62, \
+    "TidyPPrintTabs" : 63, \
+    "TidyPreserveEntities" : 64, \
+    "TidyPreTags" : 65, \
+    "TidyPriorityAttributes" : 66, \
+    "TidyPunctWrap" : 67, \
+    "TidyQuiet" : 68, \
+    "TidyQuoteAmpersand" : 69, \
+    "TidyQuoteMarks" : 70, \
+    "TidyQuoteNbsp" : 71, \
+    "TidyReplaceColor" : 72, \
+    "TidyShowErrors" : 73, \
+    "TidyShowInfo" : 74, \
+    "TidyShowMarkup" : 75, \
+    "TidyShowMetaChange" : 76, \
+    "TidyShowWarnings" : 77, \
+    "TidySkipNested" : 78, \
+    "TidySortAttributes" : 79, \
+    "TidyStrictTagsAttr" : 80, \
+    "TidyStyleTags" : 81, \
+    "TidyTabSize" : 82, \
+    "TidyUpperCaseAttrs" : 83, \
+    "TidyUpperCaseTags" : 84, \
+    "TidyUseCustomTags" : 85, \
+    "TidyVertSpace" : 86, \
+    "TidyWarnPropAttrs" : 87, \
+    "TidyWord2000" : 88, \
+    "TidyWrapAsp" : 89, \
+    "TidyWrapAttVals" : 90, \
+    "TidyWrapJste" : 91, \
+    "TidyWrapLen" : 92, \
+    "TidyWrapPhp" : 93, \
+    "TidyWrapScriptlets" : 94, \
+    "TidyWrapSection" : 95, \
+    "TidyWriteBack" : 96, \
+    "TidyXhtmlOut" : 97, \
+    "TidyXmlDecl" : 98, \
+    "TidyXmlOut" : 99, \
+    "TidyXmlPIs" : 100, \
+    "TidyXmlSpace" : 101, \
+    "TidyXmlTags" : 102
+}
+
+  foreign handler MCStringCreateWithCString(in pString as Pointer, out rString as String) returns CBool binds to "<builtin>"
+
+  foreign handler c_tidyReleaseDate () \
+        returns Ctmbstr binds to "c:libtidy>tidyReleaseDate"
+
+  foreign handler c_tidyLibraryVersion () \
+        returns Ctmbstr binds to "c:libtidy>tidyLibraryVersion"
+
+  foreign handler c_tidyPlatform () \
+        returns Ctmbstr binds to "c:libtidy>tidyPlatform"
+
+  foreign handler c_tidyCreate () \
+        returns TidyDoc binds to "c:libtidy>tidyCreate"
+
+  foreign handler c_tidyOptGetBool () \
+        returns CBool binds to "c:libtidy>tidyOptGetBool"
+
+  foreign handler c_tidyOptSetBool (in pDoc as TidyDoc, in pOptionId as Integer, in pVal as CBool) \
+        returns CBool binds to "c:libtidy>tidyOptSetBool"
+
+  // 0 = OK, 1 = Warnings, 2 = Errors
+  foreign handler c_tidyParseString (in pDoc as TidyDoc, in pString as Ctmbstr) \
+        returns Integer binds to "c:libtidy>tidyParseString"
+
+  foreign handler c_tidyCleanAndRepair (in pDoc as TidyDoc) \
+        returns Integer binds to "c:libtidy>tidyCleanAndRepair"
+
+  foreign handler c_tidyRunDiagnostics (in pDoc as TidyDoc) \
+        returns Integer binds to "c:libtidy>tidyRunDiagnostics"
+
+  foreign handler c_tidySaveBuffer (in pDoc as TidyDoc, out pBuffer as TidyBuffer) \
+        returns Integer binds to "c:libtidy>tidySaveBuffer"
+
+
+  public handler tidyReleaseDate() returns String
+    variable tRetStr as String
+    unsafe
+      if MCStringCreateWithCString(c_tidyReleaseDate(), tRetStr) then
+        return tRetStr
+      else
+        return ""
+      end if
+    end unsafe
+  end handler
+
+
+  public handler tidyLibraryVersion() returns String
+    variable tRetStr as String
+    unsafe
+      if MCStringCreateWithCString(c_tidyLibraryVersion(), tRetStr) then
+        return tRetStr
+      else
+        return ""
+      end if
+    end unsafe
+  end handler
+
+
+  public handler tidyPlatform() returns String
+    variable tRetStr as String
+    unsafe
+      if MCStringCreateWithCString(c_tidyPlatform(), tRetStr) then
+        return tRetStr
+      else
+        return ""
+      end if
+    end unsafe
+  end handler
+
+
+  public handler tidyHTMLToXHTML(in pHTML as String) returns String
+    variable tDoc as TidyDoc
+    variable tOk as Boolean
+    variable tResultCode as Integer
+
+    unsafe
+      put c_tidyCreate() into tDoc
+      put c_tidyOptSetBool(tDoc, kOptions["TidyXmlOut"], true) into tOk
+      put c_tidyParseString(tDoc, pHTML) into tResultCode
+      log "tResultCode:" && tResultCode
+    end unsafe
+
+  end handler
+
+end library
