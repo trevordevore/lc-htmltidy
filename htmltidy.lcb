@@ -9,6 +9,7 @@ library community.livecode.trevordevor.htmltidy
 
   public type TidyDoc is Pointer // to struct
   public type Ctmbstr is Pointer
+  public type Tmbchar is Pointer
 
   constant kOptions is { \
     "TidyUnknownOption" : 0, \
@@ -113,10 +114,11 @@ library community.livecode.trevordevor.htmltidy
     "TidyXmlOut" : 99, \
     "TidyXmlPIs" : 100, \
     "TidyXmlSpace" : 101, \
-    "TidyXmlTags" : 102
+    "TidyXmlTags" : 102 \
 }
 
   foreign handler MCStringCreateWithCString(in pString as Pointer, out rString as String) returns CBool binds to "<builtin>"
+  foreign handler MCStringConvertToCString(in pString as String, inout rString as optional Pointer) returns CBool binds to "<builtin>"
 
   foreign handler c_tidyReleaseDate () \
         returns Ctmbstr binds to "c:libtidy>tidyReleaseDate"
@@ -130,6 +132,9 @@ library community.livecode.trevordevor.htmltidy
   foreign handler c_tidyCreate () \
         returns TidyDoc binds to "c:libtidy>tidyCreate"
 
+  foreign handler c_tidyRelease (in pDoc as TidyDoc) \
+        returns nothing binds to "c:libtidy>tidyRelease"
+
   foreign handler c_tidyOptGetBool () \
         returns CBool binds to "c:libtidy>tidyOptGetBool"
 
@@ -138,16 +143,16 @@ library community.livecode.trevordevor.htmltidy
 
   // 0 = OK, 1 = Warnings, 2 = Errors
   foreign handler c_tidyParseString (in pDoc as TidyDoc, in pString as Ctmbstr) \
-        returns Integer binds to "c:libtidy>tidyParseString"
+        returns CInt binds to "c:libtidy>tidyParseString"
 
   foreign handler c_tidyCleanAndRepair (in pDoc as TidyDoc) \
-        returns Integer binds to "c:libtidy>tidyCleanAndRepair"
+        returns CInt binds to "c:libtidy>tidyCleanAndRepair"
 
   foreign handler c_tidyRunDiagnostics (in pDoc as TidyDoc) \
-        returns Integer binds to "c:libtidy>tidyRunDiagnostics"
+        returns CInt binds to "c:libtidy>tidyRunDiagnostics"
 
-  foreign handler c_tidySaveBuffer (in pDoc as TidyDoc, out pBuffer as TidyBuffer) \
-        returns Integer binds to "c:libtidy>tidySaveBuffer"
+  foreign handler c_tidySaveString (in pDoc as TidyDoc, inout rBuffer as Tmbchar, out rBufferLength as CUInt) \
+        returns CInt binds to "c:libtidy>tidySaveString"
 
 
   public handler tidyReleaseDate() returns String
@@ -188,14 +193,35 @@ library community.livecode.trevordevor.htmltidy
 
   public handler tidyHTMLToXHTML(in pHTML as String) returns String
     variable tDoc as TidyDoc
+    variable tHTML as optional Ctmbstr
     variable tOk as Boolean
     variable tResultCode as Integer
+    variable tBuffer as Pointer
+    variable tBufferLength as Integer
 
     unsafe
+      put MCStringConvertToCString(pHTML, tHTML) into tOk
+      log "Ok:" && tOk formatted as string
+
       put c_tidyCreate() into tDoc
+      log tDoc
+
+      log kOptions["TidyXmlOut"]
+
       put c_tidyOptSetBool(tDoc, kOptions["TidyXmlOut"], true) into tOk
-      put c_tidyParseString(tDoc, pHTML) into tResultCode
-      log "tResultCode:" && tResultCode
+      // tOk is false but should be true
+      log "Ok:" && tOk formatted as string
+
+      log tHTML
+      // Next line crashes.
+      -- put c_tidyParseString(tDoc, tHTML) into tResultCode
+
+      -- log "tResultCode:" && tResultCode formatted as string
+      -- put c_tidySaveString(tDoc, tBuffer, tBufferLength) into tResultCode
+      -- log "tResultCode:" && tResultCode formatted as string
+
+      c_tidyRelease(tDoc)
+      return ""
     end unsafe
 
   end handler
