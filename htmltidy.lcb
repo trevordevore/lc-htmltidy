@@ -8,7 +8,9 @@ library community.livecode.trevordevor.htmltidy
   metadata version is "0.0.1"
 
   public type TidyDoc is Pointer
+  -- ctmbstr: https://github.com/htacg/tidy-html5/blob/next/include/tidyplatform.h#L607
   public type Ctmbstr is Pointer
+  -- tmbstr: https://github.com/htacg/tidy-html5/blob/next/include/tidyplatform.h#L607
   public type Tmbchar is Pointer
 
   constant kOptions is { \
@@ -119,7 +121,7 @@ library community.livecode.trevordevor.htmltidy
 }
 
   foreign handler MCStringCreateWithCString(in pString as Pointer, out rString as String) returns CBool binds to "<builtin>"
-  foreign handler MCStringConvertToCString(in pString as String, out rString as optional Pointer) returns CBool binds to "<builtin>"
+  foreign handler MCStringConvertToCString(in pString as String, out rCString as Pointer) returns CBool binds to "<builtin>"
 
   foreign handler c_tidyReleaseDate () \
         returns Ctmbstr binds to "c:libtidy>tidyReleaseDate"
@@ -221,7 +223,7 @@ library community.livecode.trevordevor.htmltidy
 
   public handler tidyHTMLToXHTML(in pHTML as String) returns String
     variable tDoc as TidyDoc
-    variable tCStr as optional Pointer
+    variable tCStr as Pointer
     variable tRetStr as String
     variable tHTML as optional Ctmbstr
     variable tOk as Boolean
@@ -230,9 +232,13 @@ library community.livecode.trevordevor.htmltidy
     variable tBufferLength as Integer
 
     unsafe
+      -- Attempting to create a Ctmbstr from a LiveCode string
+      -- ctmbstr: https://github.com/htacg/tidy-html5/blob/next/include/tidyplatform.h#L607
       MCStringConvertToCString("TidyUnknownOption", tCStr)
-      -- MCStringCreateWithCString(c_tidyReleaseDate(), tRetStr)
-      log c_tidyOptGetIdForName(tCStr) -- returns 104 which is N_TIDY_OPTIONS (error)
+      -- The next handler is logging `104` which is N_TIDY_OPTIONS (error)
+      -- Appears that tCStr is not the right format.
+      log c_tidyOptGetIdForName(tCStr)
+
 
       put MCStringConvertToCString(pHTML, tHTML) into tOk
       log "convert to c str Ok:" && tOk formatted as string
