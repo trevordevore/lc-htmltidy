@@ -230,10 +230,17 @@ library community.livecode.trevordevor.htmltidy
   end handler
 
 
-  public handler tidyHTMLToXHTML(in pHTML as String, out rError) returns String
+  /**
+  Summary: Converts HTML to XHTML.
+
+  Parameters:
+  pHTML: UTF-8 HTML.
+  rError: Contains any error mesages.
+
+  Returns: XHTML or empty if rRrror is not empty.
+  */
+  public handler tidyHTMLToXHTML(in pHTML as Data, out rError) returns String
     variable tDoc as optional TidyDoc
-    variable tCStr as Pointer
-    variable tHTML as Pointer
     variable tResultCode as Integer
     variable tBuffer as optional Pointer
     variable tBufferLength as Integer
@@ -243,10 +250,6 @@ library community.livecode.trevordevor.htmltidy
     put "" into rError
 
     unsafe
-      if not MCStringConvertToCString(pHTML, tHTML) then
-        put "failed to convert HTML to C String" into rError
-      end if
-
       if rError is "" then
         put c_tidyCreate() into tDoc
 
@@ -257,7 +260,7 @@ library community.livecode.trevordevor.htmltidy
 
       // Parse
       if rError is "" then
-        put c_tidyParseString(tDoc, tHTML) into tResultCode
+        put c_tidyParseString(tDoc, MCDataGetBytePtr(pHTML)) into tResultCode
       end if
 
       // Clean
