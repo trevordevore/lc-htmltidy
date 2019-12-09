@@ -169,7 +169,7 @@ library community.livecode.trevordevor.htmltidy
   foreign handler c_tidyOptGetBool () \
         returns CBool binds to "c:libtidy>tidyOptGetBool"
 
-  foreign handler c_tidyOptSetBool (in pDoc as TidyDoc, in pOptionId as Integer, in pVal as CBool) \
+  foreign handler c_tidyOptSetBool (in pDoc as TidyDoc, in pOptionId as CInt, in pVal as CBool) \
         returns CBool binds to "c:libtidy>tidyOptSetBool"
 
   // 0 = OK, 1 = Warnings, 2 = Errors
