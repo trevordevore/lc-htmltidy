@@ -13,6 +13,8 @@ library community.livecode.trevordevor.htmltidy
   -- tmbstr: https://github.com/htacg/tidy-html5/blob/next/include/tidyplatform.h#L607
   public type Tmbchar is Pointer
 
+  constant ENOMEM is -12
+
   constant kOptions is { \
     "TidyUnknownOption" : 0, \
     "TidyAccessibilityCheckLevel" : 1, \
@@ -118,8 +120,10 @@ library community.livecode.trevordevor.htmltidy
     "TidyXmlPIs" : 101, \
     "TidyXmlSpace" : 102, \
     "TidyXmlTags" : 103 \
-}
+  }
 
+  foreign handler MCDataCreateMutable( in pInitialCapacity as Integer, inout pData as Data) returns CBool binds to "<builtin>"
+  foreign handler MCDataGetBytePtr( in pData as Data ) returns Pointer binds to "<builtin>"
   foreign handler MCStringCreateWithCString(in pString as Pointer, out rString as String) returns CBool binds to "<builtin>"
   foreign handler MCStringConvertToCString(in pString as String, out rCString as Pointer) returns CBool binds to "<builtin>"
 
@@ -178,7 +182,7 @@ library community.livecode.trevordevor.htmltidy
   foreign handler c_tidyRunDiagnostics (in pDoc as TidyDoc) \
         returns CInt binds to "c:libtidy>tidyRunDiagnostics"
 
-  foreign handler c_tidySaveString (in pDoc as TidyDoc, inout rBuffer as Tmbchar, out rBufferLength as CUInt) \
+  foreign handler c_tidySaveString (in pDoc as TidyDoc, in rBuffer as Pointer, out rBufferLength as CUInt) \
         returns CInt binds to "c:libtidy>tidySaveString"
 
   foreign handler c_tidyOptGetIdForName (in pOptName as Ctmbstr) \
@@ -221,51 +225,124 @@ library community.livecode.trevordevor.htmltidy
   end handler
 
 
-  public handler tidyHTMLToXHTML(in pHTML as String) returns String
+  public handler tidyHTMLToXHTML(in pHTML as String, out rError) returns String
     variable tDoc as TidyDoc
     variable tCStr as Pointer
-    variable tRetStr as String
-    variable tHTML as optional Ctmbstr
-    variable tOk as Boolean
+    variable tHTML as Pointer
     variable tResultCode as Integer
-    variable tBuffer as Pointer
+    variable tBuffer as Data
     variable tBufferLength as Integer
 
     unsafe
-      -- Attempting to create a Ctmbstr from a LiveCode string
-      -- ctmbstr: https://github.com/htacg/tidy-html5/blob/next/include/tidyplatform.h#L607
-      MCStringConvertToCString("TidyUnknownOption", tCStr)
-      -- The next handler is logging `104` which is N_TIDY_OPTIONS (error)
-      -- Appears that tCStr is not the right format.
-      log c_tidyOptGetIdForName(tCStr)
-
-
-      put MCStringConvertToCString(pHTML, tHTML) into tOk
-      log "convert to c str Ok:" && tOk formatted as string
+      if not MCStringConvertToCString(pHTML, tHTML) then
+        put "failed to convert HTML to C String" into rError
+        return ""
+      end if
 
       put c_tidyCreate() into tDoc
-      log tDoc
 
-      -- log c_tidyStatus(tDoc)
+      // Setting options always returns `false` :-(
+      -- kOptions["TidyXhtmlOut"]
+      -- if not c_tidyOptSetBool(tDoc, 98, true) then
+      --   put "unable to set XHTMLOut" into rError
+      --   return ""
+      -- end if
 
-      put c_tidyOptSetBool(tDoc, kOptions["TidyXmlOut"], true) into tOk
-      // tOk is false but should be true
-      log "option set Ok:" && tOk formatted as string
+      -- if not c_tidyOptSetBool(tDoc, kOptions["TidyForceOutput"], true) then
+      --   put "unable to set force output" into rError
+      --   return ""
+      -- end if
 
-      log c_tidyConfigErrorCount(tDoc)
+      // Parse
+      put c_tidyParseString(tDoc, tHTML) into tResultCode
+      log "tidyParseString tResultCode:" && tResultCode formatted as string
 
-      log tHTML
-      // Next line crashes.
-      -- put c_tidyParseString(tDoc, tHTML) into tResultCode
+      // Clean
+      if tResultCode >= 0 then
+        put c_tidyCleanAndRepair(tDoc) into tResultCode
+        log "c_tidyCleanAndRepair:" && tResultCode formatted as string
+      end if
 
-      -- log "tResultCode:" && tResultCode formatted as string
-      -- put c_tidySaveString(tDoc, tBuffer, tBufferLength) into tResultCode
-      -- log "tResultCode:" && tResultCode formatted as string
+      // Diagnostics
+      if tResultCode >= 0 then
+        put c_tidyRunDiagnostics(tDoc) into tResultCode
+        log "c_tidyRunDiagnostics:" && tResultCode formatted as string
+      end if
+
+      if tResultCode > 1 then
+        // TODO: Error in parsing document so turn on `TidyForceOutput` here.
+      end if
+
+      // Move converted doc into a LiveCode String.
+      // Start by getting buffer length
+      put c_tidySaveString(tDoc, MCDataGetBytePtr(tBuffer), tBufferLength) into tResultCode
+      if tResultCode is ENOMEM then
+        log "allocating Data"
+        // QUESTION: Is this the right way to allocate a buffer in LiveCode for tidySavingString?
+        if not MCDataCreateMutable(tBufferLength, tBuffer) then
+          put "unable to create Data for buffer" into rError
+          return ""
+        end if
+
+        put c_tidySaveString(tDoc, MCDataGetBytePtr(tBuffer), tBufferLength) into tResultCode
+      end if
+      log "tidySaveString tResultCode:" && tResultCode formatted as string
+      log "tidySaveString tBufferLength:" && tBufferLength formatted as string
+
+      // TODO: convert tBuffer to a String. Method for
+      if tResultCode is ENOMEM then
+        put "ENOMEM error" into rError
+        return ""
+      else
+        // TODO: This causes LiveCode to lock up
+        // the number of types return `2272125568.000000` in the test stack. What???
+        /*
+          "allocating Data"
+          "tidySaveString tResultCode: 1"
+          "tidySaveString tBufferLength: 32739"
+          number of bytes in tBuffer: 2272125568.000000
+        */
+        log the number of bytes in tBuffer
+        -- return tmbcharToString(tBuffer)
+      end if
 
       c_tidyRelease(tDoc)
       return ""
     end unsafe
 
+  end handler
+
+
+  public handler tidyTest(out rError) returns String
+    variable tCStr as Pointer
+
+    unsafe
+      -- Attempting to create a Ctmbstr from a LiveCode string
+      -- ctmbstr: https://github.com/htacg/tidy-html5/blob/next/include/tidyplatform.h#L607
+      if not MCStringConvertToCString("TidyUnknownOption", tCStr) then
+        put "unable to create option string" into rError
+        return ""
+      end if
+
+      -- The next handler is logging `104` which is N_TIDY_OPTIONS (error)
+      -- Appears that tCStr is not the right format.
+      log c_tidyOptGetIdForName(tCStr)
+    end unsafe
+
+    return ""
+  end handler
+
+
+  private handler tmbcharToString(in pTmbChar as Data) returns String
+    variable tString as String
+    variable tCode as Number
+    variable tCharByte as Data
+
+    repeat for each byte tCharByte in pTmbChar // tCounter from 1 up to pLength
+      put the code of tCharByte into tCode
+      put the char with code tCode after tString
+    end repeat
+    return tString
   end handler
 
 end library
