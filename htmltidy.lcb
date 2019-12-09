@@ -334,7 +334,7 @@ library community.livecode.trevordevor.htmltidy
     variable tCode as Number
     variable tCharByte as Data
 
-    repeat for each byte tCharByte in pTmbChar // tCounter from 1 up to pLength
+    repeat for each byte tCharByte in pTmbChar
       put the code of tCharByte into tCode
       put the char with code tCode after tString
     end repeat
