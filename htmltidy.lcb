@@ -241,17 +241,11 @@ library community.livecode.trevordevor.htmltidy
 
       put c_tidyCreate() into tDoc
 
-      // Setting options always returns `false` :-(
-      -- kOptions["TidyXhtmlOut"]
-      -- if not c_tidyOptSetBool(tDoc, 98, true) then
-      --   put "unable to set XHTMLOut" into rError
-      --   return ""
-      -- end if
-
-      -- if not c_tidyOptSetBool(tDoc, kOptions["TidyForceOutput"], true) then
-      --   put "unable to set force output" into rError
-      --   return ""
-      -- end if
+      if not c_tidyOptSetBool(tDoc, kOptions["TidyXhtmlOut"], true) then
+        put "unable to set XHTMLOut" into rError
+        c_tidyRelease(tDoc)
+        return ""
+      end if
 
       // Parse
       put c_tidyParseString(tDoc, tHTML) into tResultCode
