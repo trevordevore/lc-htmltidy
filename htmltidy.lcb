@@ -278,11 +278,16 @@ library community.livecode.trevordevor.htmltidy
       put c_tidySaveString(tDoc, MCDataGetBytePtr(tBuffer), tBufferLength) into tResultCode
       if tResultCode is ENOMEM then
         log "allocating Data"
-        // QUESTION: Is this the right way to allocate a buffer in LiveCode for tidySavingString?
-        if not MCDataCreateMutable(tBufferLength, tBuffer) then
-          put "unable to create Data for buffer" into rError
-          return ""
-        end if
+        variable tCounter as Number
+
+        // QUESTION: Is this the most efficient way to allocate a buffer in LiveCode for tidySavingString?
+        repeat with tCounter from 1 up to tBufferLength
+          put the byte with code 0 after tBuffer
+        end repeat
+        -- if not MCDataCreateMutable(tBufferLength, tBuffer) then
+        --   put "unable to create Data for buffer" into rError
+        --   return ""
+        -- end if
 
         put c_tidySaveString(tDoc, MCDataGetBytePtr(tBuffer), tBufferLength) into tResultCode
       end if
@@ -294,16 +299,7 @@ library community.livecode.trevordevor.htmltidy
         put "ENOMEM error" into rError
         return ""
       else
-        // TODO: This causes LiveCode to lock up
-        // the number of types return `2272125568.000000` in the test stack. What???
-        /*
-          "allocating Data"
-          "tidySaveString tResultCode: 1"
-          "tidySaveString tBufferLength: 32739"
-          number of bytes in tBuffer: 2272125568.000000
-        */
-        log the number of bytes in tBuffer
-        -- return tmbcharToString(tBuffer)
+        return tmbcharToString(tBuffer)
       end if
 
       c_tidyRelease(tDoc)
