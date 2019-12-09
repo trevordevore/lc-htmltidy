@@ -264,7 +264,12 @@ library community.livecode.trevordevor.htmltidy
       end if
 
       if tResultCode > 1 then
-        // TODO: Error in parsing document so turn on `TidyForceOutput` here.
+        // Error in parsing document so turn on `TidyForceOutput` here.
+        if not c_tidyOptSetBool(tDoc, kOptions["TidyForceOutput"], true) then
+          put "unable to set force output" into rError
+          c_tidyRelease(tDoc)
+          return ""
+        end if
       end if
 
       // Move converted doc into a LiveCode String.
@@ -272,16 +277,21 @@ library community.livecode.trevordevor.htmltidy
       put c_tidySaveString(tDoc, MCDataGetBytePtr(tBuffer), tBufferLength) into tResultCode
       if tResultCode is ENOMEM then
         log "allocating Data"
-        variable tCounter as Number
 
-        // QUESTION: Is this the most efficient way to allocate a buffer in LiveCode for tidySavingString?
-        repeat with tCounter from 1 up to tBufferLength
-          put the byte with code 0 after tBuffer
-        end repeat
-        -- if not MCDataCreateMutable(tBufferLength, tBuffer) then
-        --   put "unable to create Data for buffer" into rError
-        --   return ""
-        -- end if
+        if not MCMemoryAllocate(tBufferLength, MCDataGetBytePtr(tBuffer)) then
+          put "unable to allocate memory for buffer" into rError
+          c_tidyRelease(tDoc)
+          return ""
+        else
+          log ["Number of bytes:", the number of bytes in tBuffer]
+        end if
+
+        -- variable tCounter as Number
+
+        -- // QUESTION: Is this the most efficient way to allocate a buffer in LiveCode for tidySavingString?
+        -- repeat with tCounter from 1 up to tBufferLength
+        --   put the byte with code 0 after tBuffer
+        -- end repeat
 
         put c_tidySaveString(tDoc, MCDataGetBytePtr(tBuffer), tBufferLength) into tResultCode
       end if
@@ -291,13 +301,14 @@ library community.livecode.trevordevor.htmltidy
       // TODO: convert tBuffer to a String. Method for
       if tResultCode is ENOMEM then
         put "ENOMEM error" into rError
+        c_tidyRelease(tDoc)
         return ""
       else
-        return tmbcharToString(tBuffer)
+        put tmbcharToString(tBuffer) into tConvertedHTML
       end if
 
       c_tidyRelease(tDoc)
-      return ""
+      return tConvertedHTML
     end unsafe
 
   end handler
