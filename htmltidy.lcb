@@ -187,7 +187,7 @@ library community.livecode.trevordevor.htmltidy
   foreign handler c_tidyRunDiagnostics (in pDoc as TidyDoc) \
         returns CInt binds to "c:libtidy>tidyRunDiagnostics"
 
-  foreign handler c_tidySaveString (in pDoc as TidyDoc, in rBuffer as optional Pointer, out rBufferLength as CUInt) \
+  foreign handler c_tidySaveString (in pDoc as TidyDoc, in rBuffer as optional Pointer, inout xBufferLength as CUInt) \
         returns CInt binds to "c:libtidy>tidySaveString"
 
   foreign handler c_tidyOptGetIdForName (in pOptName as Ctmbstr) \
@@ -289,6 +289,7 @@ library community.livecode.trevordevor.htmltidy
       // Move converted doc into a LiveCode String.
       // Get the buffer length
       if rError is "" or tSaveAnyway then
+        put 0 into tBufferLength
         put c_tidySaveString(tDoc, nothing, tBufferLength) into tResultCode
         if tResultCode is ENOMEM then
           if not MCMemoryAllocate(tBufferLength, tBuffer) then
