@@ -235,12 +235,15 @@ library community.livecode.trevordevor.htmltidy
 
   Parameters:
   pHTML: UTF-8 HTML.
+  pOptionsA: An array of settings to apply before converting the string. This is currently limited to options that are Boolean values.
   rError: Contains any error mesages.
 
-  Returns: XHTML or empty if rRrror is not empty.
+  Returns: Repaired HTML/XHTML or empty if rRrror is not empty.
   */
-  public handler tidyHTMLToXHTML(in pHTML as Data, out rError) returns String
+  public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError) returns String
     variable tDoc as optional TidyDoc
+    variable tForceOutput as Boolean
+    variable tSaveAnyway as Boolean
     variable tResultCode as Integer
     variable tBuffer as optional Pointer
     variable tBufferLength as Integer
@@ -249,13 +252,15 @@ library community.livecode.trevordevor.htmltidy
     put -1 into tResultCode
     put "" into rError
 
+    put "TidyForceOutput" is among the keys of pOptionsA and pOptionsA["TidyForceOutput"] is true into tForceOutput
+    put false into tSaveAnyway
+
     unsafe
       if rError is "" then
         put c_tidyCreate() into tDoc
 
-        if not c_tidyOptSetBool(tDoc, kOptions["TidyXhtmlOut"], true) then
-          put "unable to set XHTMLOut" into rError
-        end if
+        _applyOptionsToTidyDoc(tDoc, pOptionsA)
+        put the result into rError
       end if
 
       // Parse
@@ -275,16 +280,14 @@ library community.livecode.trevordevor.htmltidy
         end if
 
         if tResultCode > 1 then
-          // Error in parsing document so turn on `TidyForceOutput` here.
-          if not c_tidyOptSetBool(tDoc, kOptions["TidyForceOutput"], true) then
-            put "unable to set force output" into rError
-          end if
+          // TODO: Report errors in parsing the document.
+          put tForceOutput into tSaveAnyway
         end if
       end if
 
       // Move converted doc into a LiveCode String.
       // Get the buffer length
-      if rError is "" then
+      if rError is "" or tSaveAnyway then
         put c_tidySaveString(tDoc, nothing, tBufferLength) into tResultCode
         if tResultCode is ENOMEM then
           if not MCMemoryAllocate(tBufferLength, tBuffer) then
@@ -296,11 +299,11 @@ library community.livecode.trevordevor.htmltidy
             end if
           end if
         end if
-      end if
 
-      if rError is "" then
-        if not MCStringCreateWithBytes(tBuffer, tBufferLength, kMCStringEncodingUTF8, false, tConvertedHTML) then
-          put "unable to convert buffer to string" into rError
+        if rError is "" then
+          if not MCStringCreateWithBytes(tBuffer, tBufferLength, kMCStringEncodingUTF8, false, tConvertedHTML) then
+            put "unable to convert buffer to string" into rError
+          end if
         end if
       end if
 
@@ -315,6 +318,38 @@ library community.livecode.trevordevor.htmltidy
       return tConvertedHTML
     end unsafe
 
+  end handler
+
+  /**
+  Summary: Applies an array of settings to a TinyDoc.
+
+  Parameters:
+  pTidyDoc: The TidyDoc to apply the settings to.
+  pOptionsA: An array. Keys are the properties to set and match any boolean keys in `kOptions` array. Values are the values to assign to the property.
+
+  Description:
+  This handler is currently limited to options that are set with `tidyOptSetBool`.
+
+  Returns: Error message
+  */
+  private handler _applyOptionsToTidyDoc(in pTidyDoc as TidyDoc, in pOptionsA as Array) returns String
+    variable tError as String
+    variable tSetting as String
+    variable tBoolean as Boolean
+
+    unsafe
+
+      repeat for each key tSetting in pOptionsA
+        put pOptionsA[tSetting] is "true" into tBoolean
+        if not c_tidyOptSetBool(pTidyDoc, kOptions[tSetting], tBoolean) then
+          put "unable to set" && tSetting into tError
+          exit repeat
+        end if
+      end repeat
+
+    end unsafe
+
+    return tError
   end handler
 
 end library
