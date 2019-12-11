@@ -280,7 +280,7 @@ library community.livecode.trevordevore.htmltidy
 
   Returns: Repaired HTML/XHTML as UTF-8 encoded string or empty if rRrror is not empty.
   */
-  public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError, out rWarningCount, out rErrorCount) returns Data
+  public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError as String, out rWarningCount as Integer, out rErrorCount as Integer) returns Data
     variable tDoc as optional TidyDoc
     variable tForceOutput as Boolean
     variable tSaveAnyway as Boolean
