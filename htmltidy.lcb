@@ -1,4 +1,4 @@
-library community.livecode.trevordevor.htmltidy
+library community.livecode.trevordevore.htmltidy
 
   use com.livecode.engine
   use com.livecode.foreign
