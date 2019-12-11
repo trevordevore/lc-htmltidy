@@ -323,7 +323,7 @@ library community.livecode.trevordevor.htmltidy
           end if
         end if
 
-        if rError is "" then
+        if rError is "" and tBufferLength > 0 then
           if not MCStringCreateWithBytes(tBuffer, tBufferLength, kMCStringEncodingUTF8, false, tConvertedHTML) then
             put "unable to convert buffer to string" into rError
           end if
