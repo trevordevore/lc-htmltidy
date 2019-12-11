@@ -197,6 +197,9 @@ library community.livecode.trevordevor.htmltidy
   foreign handler c_tidyConfigErrorCount (in pDoc as TidyDoc) \
         returns CUInt binds to "c:libtidy>tidyConfigErrorCount"
 
+  foreign handler c_tidySetErrorBuffer (in pDoc as TidyDoc, out pErrorBuffer as Pointer) \
+        returns CInt binds to "c:libtidy>tidySetErrorBuffer"
+
   foreign handler c_tidyOptGetBool () \
         returns CBool binds to "c:libtidy>tidyOptGetBool"
 
