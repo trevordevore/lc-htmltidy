@@ -143,7 +143,10 @@ library community.livecode.trevordevor.htmltidy
   foreign handler MCMemoryAllocate(in pSize as UIntSize, out rBlock as Pointer) returns CBool binds to "<builtin>"
   foreign handler MCMemoryDeallocate(in pBlock as Pointer) returns nothing binds to "<builtin>"
   foreign handler MCStringCreateWithBytes( \
-        in pBytes as Pointer, in pByteCount as LCUInt, in pEncoding as CUInt, in pIsExternalRep as CBool, out rString as String\
+        in pBytes as Pointer, in pByteCount as LCUInt, in pEncoding as CUInt, in pIsExternalRep as CBool, out rString as String \
+        ) returns CBool binds to "<builtin>"
+  foreign handler MCDataCreateWithBytes( \
+        in pBytes as Pointer, in pByteCount as LCUInt, out rData as Data \
         ) returns CBool binds to "<builtin>"
   foreign handler MCDataGetBytePtr( in pData as Data ) returns Pointer binds to "<builtin>"
   foreign handler MCStringCreateWithCString(in pString as Pointer, out rString as String) returns CBool binds to "<builtin>"
@@ -275,16 +278,16 @@ library community.livecode.trevordevor.htmltidy
   rWarningCount: The number of warnings generated.
   rErrorCount: The number of errors generated.
 
-  Returns: Repaired HTML/XHTML as a Livecode encoded string or empty if rRrror is not empty.
+  Returns: Repaired HTML/XHTML as UTF-8 encoded string or empty if rRrror is not empty.
   */
-  public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError, out rWarningCount, out rErrorCount) returns String
+  public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError, out rWarningCount, out rErrorCount) returns Data
     variable tDoc as optional TidyDoc
     variable tForceOutput as Boolean
     variable tSaveAnyway as Boolean
     variable tResultCode as Integer
     variable tBuffer as optional Pointer
     variable tBufferLength as Integer
-    variable tConvertedHTML as String
+    variable tConvertedHTML as Data
 
     put -1 into tResultCode
     put "" into rError
@@ -350,7 +353,7 @@ library community.livecode.trevordevor.htmltidy
         end if
 
         if rError is "" and tBufferLength > 0 then
-          if not MCStringCreateWithBytes(tBuffer, tBufferLength, kMCStringEncodingUTF8, false, tConvertedHTML) then
+          if not MCDataCreateWithBytes(tBuffer, tBufferLength, tConvertedHTML) then
             put "unable to convert buffer to string" into rError
           end if
         end if
