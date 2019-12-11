@@ -150,6 +150,15 @@ library community.livecode.trevordevor.htmltidy
   foreign handler c_tidyStatus (in pDoc as TidyDoc) \
         returns CInt binds to "c:libtidy>tidyStatus"
 
+  foreign handler c_tidySetCharEncoding (in pDoc as TidyDoc, in pEncoding as Ctmbstr) \
+        returns CInt binds to "c:libtidy>tidySetCharEncoding"
+
+  foreign handler c_tidySetInCharEncoding (in pDoc as TidyDoc, in pEncoding as Ctmbstr) \
+        returns CInt binds to "c:libtidy>tidySetInCharEncoding"
+
+  foreign handler c_tidySetOutCharEncoding (in pDoc as TidyDoc, in pEncoding as Ctmbstr) \
+        returns CInt binds to "c:libtidy>tidySetOutCharEncoding"
+
   foreign handler c_tidyDetectedHtmlVersion (in pDoc as TidyDoc) \
         returns CInt binds to "c:libtidy>tidyDetectedHtmlVersion"
 
