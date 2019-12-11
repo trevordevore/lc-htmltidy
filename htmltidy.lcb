@@ -391,13 +391,13 @@ library community.livecode.trevordevor.htmltidy
         if tSetting is in ["TidyCharEncoding", "TidyInCharEncoding", "TidyOutCharEncoding"] then
           parse pOptionsA[tSetting] as number into tNumber
           if not c_tidyOptSetInt(pTidyDoc, kOptions[tSetting], tNumber) then
-            put "unable to set" && tSetting into tError
+            put "unable to set integer" && tSetting into tError
             exit repeat
           end if
         else if tSetting is in ["TidyCSSPrefix", "TidyAltText", "TidyEmptyTags", "TidyBlockTags", "TidyInlineTags", "TidyPreTags"] then
           if MCStringConvertToCString(pOptionsA[tSetting], tCStr) then
             if not c_tidyOptSetValue(pTidyDoc, kOptions[tSetting], tCStr) then
-              put "unable to set" && tSetting into tError
+              put "unable to set string" && tSetting into tError
               exit repeat
             end if
           else
@@ -407,7 +407,7 @@ library community.livecode.trevordevor.htmltidy
         else
           put pOptionsA[tSetting] is "true" into tBoolean
           if not c_tidyOptSetBool(pTidyDoc, kOptions[tSetting], tBoolean) then
-            put "unable to set" && tSetting into tError
+            put "unable to set boolean" && tSetting into tError
             exit repeat
           end if
         end if
