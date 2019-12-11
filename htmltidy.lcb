@@ -247,7 +247,7 @@ library community.livecode.trevordevor.htmltidy
   pOptionsA: An array of settings to apply before converting the string. This is currently limited to options that are Boolean values.
   rError: Contains any error mesages.
 
-  Returns: Repaired HTML/XHTML or empty if rRrror is not empty.
+  Returns: Repaired HTML/XHTML as a Livecode encoded string or empty if rRrror is not empty.
   */
   public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError) returns String
     variable tDoc as optional TidyDoc
