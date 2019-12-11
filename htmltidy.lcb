@@ -123,6 +123,23 @@ library community.livecode.trevordevor.htmltidy
     "TidyXmlTags" : 103 \
   }
 
+  constant kEncodings is { \
+    "TidyEncRaw" : 0, \
+    "TidyEncAscii" : 1, \
+    "TidyEncLatin0" : 2, \
+    "TidyEncLatin1" : 3, \
+    "TidyEncUtf8" : 4, \
+    "TidyEncIso2022" : 5, \
+    "TidyEncMac" : 6, \
+    "TidyEncWin1252" : 7, \
+    "TidyEncIbm858" : 8, \
+    "TidyEncUtf16le" : 9, \
+    "TidyEncUtf16be" : 10, \
+    "TidyEncUtf16" : 11, \
+    "TidyEncBig5" : 12, \
+    "TidyEncShiftjis" : 13 \
+  }
+
   foreign handler MCMemoryAllocate(in pSize as UIntSize, out rBlock as Pointer) returns CBool binds to "<builtin>"
   foreign handler MCMemoryDeallocate(in pBlock as Pointer) returns nothing binds to "<builtin>"
   foreign handler MCStringCreateWithBytes( \
@@ -185,6 +202,12 @@ library community.livecode.trevordevor.htmltidy
 
   foreign handler c_tidyOptSetBool (in pDoc as TidyDoc, in pOptionId as CInt, in pVal as CBool) \
         returns CBool binds to "c:libtidy>tidyOptSetBool"
+
+  foreign handler c_tidyOptSetInt (in pDoc as TidyDoc, in pOptionId as CInt, in pVal as CULong) \
+        returns CBool binds to "c:libtidy>tidyOptSetInt"
+
+  foreign handler c_tidyOptSetValue (in pDoc as TidyDoc, in pOptionId as CInt, in pString as Ctmbstr) \
+        returns CBool binds to "c:libtidy>tidyOptSetValue"
 
   // 0 = OK, 1 = Warnings, 2 = Errors
   foreign handler c_tidyParseString (in pDoc as TidyDoc, in pString as Ctmbstr) \
@@ -348,10 +371,7 @@ library community.livecode.trevordevor.htmltidy
 
   Parameters:
   pTidyDoc: The TidyDoc to apply the settings to.
-  pOptionsA: An array. Keys are the properties to set and match any boolean keys in `kOptions` array. Values are the values to assign to the property.
-
-  Description:
-  This handler is currently limited to options that are set with `tidyOptSetBool`.
+  pOptionsA: An array. Keys are the properties to set. Values are the values to assign to the property.
 
   Returns: Error message
   */
@@ -359,14 +379,34 @@ library community.livecode.trevordevor.htmltidy
     variable tError as String
     variable tSetting as String
     variable tBoolean as Boolean
+    variable tNumber as Integer
+    variable tCStr as Pointer
 
     unsafe
 
       repeat for each key tSetting in pOptionsA
-        put pOptionsA[tSetting] is "true" into tBoolean
-        if not c_tidyOptSetBool(pTidyDoc, kOptions[tSetting], tBoolean) then
-          put "unable to set" && tSetting into tError
-          exit repeat
+        if tSetting is in ["TidyCharEncoding", "TidyInCharEncoding", "TidyOutCharEncoding"] then
+          parse pOptionsA[tSetting] as number into tNumber
+          if not c_tidyOptSetInt(pTidyDoc, kOptions[tSetting], tNumber) then
+            put "unable to set" && tSetting into tError
+            exit repeat
+          end if
+        else if tSetting is in ["TidyCSSPrefix", "TidyAltText", "TidyEmptyTags", "TidyBlockTags", "TidyInlineTags", "TidyPreTags"] then
+          if MCStringConvertToCString(pOptionsA[tSetting], tCStr) then
+            if not c_tidyOptSetValue(pTidyDoc, kOptions[tSetting], tCStr) then
+              put "unable to set" && tSetting into tError
+              exit repeat
+            end if
+          else
+            put "unable to allocate memory for string option" && tSetting into tError
+            exit repeat
+          end if
+        else
+          put pOptionsA[tSetting] is "true" into tBoolean
+          if not c_tidyOptSetBool(pTidyDoc, kOptions[tSetting], tBoolean) then
+            put "unable to set" && tSetting into tError
+            exit repeat
+          end if
         end if
       end repeat
 
