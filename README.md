@@ -1,10 +1,14 @@
-# tidy-html5 LiveCode Builder Wrapper
+# Tidy LiveCode Builder Wrapper
 
-This repository contains LiveCode Builder code for wrapping libtidy. It also contains the libtidy libraries for macOS and Windows.
+This repository contains LiveCode Builder code for wrapping libtidy, the library version of HTML Tidy. HTML Tiday tidies HTML and XML and you can learn more about it on [the official website](http://www.html-tidy.org). There is a good [introduction for developers page](http://www.html-tidy.org/developer/) as well.
+
+The repository also contains the libtidy libraries for macOS and Windows.
+
+
 
 ## Building 
 
-Instructions for building tidy-html5 can be found here:
+Instructions for building libtidy can be found here:
 
 https://github.com/htacg/tidy-html5/blob/next/README/BUILD.md#build-the-tidy-library-and-command-line-tool
 
