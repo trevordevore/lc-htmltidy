@@ -244,12 +244,14 @@ library community.livecode.trevordevor.htmltidy
 
   Parameters:
   pHTML: UTF-8 HTML.
-  pOptionsA: An array of settings to apply before converting the string. This is currently limited to options that are Boolean values.
+  pOptionsA: An array of settings to apply before converting the string.
   rError: Contains any error mesages.
+  rWarningCount: The number of warnings generated.
+  rErrorCount: The number of errors generated.
 
   Returns: Repaired HTML/XHTML as a Livecode encoded string or empty if rRrror is not empty.
   */
-  public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError) returns String
+  public handler tidyHTML(in pHTML as Data, in pOptionsA as Array, out rError, out rWarningCount, out rErrorCount) returns String
     variable tDoc as optional TidyDoc
     variable tForceOutput as Boolean
     variable tSaveAnyway as Boolean
@@ -268,17 +270,25 @@ library community.livecode.trevordevor.htmltidy
       if rError is "" then
         put c_tidyCreate() into tDoc
 
+        // TODO: Set up error buffer
+      end if
+
+      if rError is "" then
+        if not c_tidyOptSetInt(tDoc, kOptions["TidyCharEncoding"], kEncodings["TidyEncUtf8"]) then
+          put "unable to set encoding to UTF-8" into rError
+        end if
+      end if
+
+      // Apply options and Parse
+      if rError is "" then
         _applyOptionsToTidyDoc(tDoc, pOptionsA)
         put the result into rError
       end if
 
-      // Parse
-      if rError is "" then
-        put c_tidyParseString(tDoc, MCDataGetBytePtr(pHTML)) into tResultCode
-      end if
-
       // Clean
       if rError is "" then
+        put c_tidyParseString(tDoc, MCDataGetBytePtr(pHTML)) into tResultCode
+
         if tResultCode >= 0 then
           put c_tidyCleanAndRepair(tDoc) into tResultCode
         end if
@@ -286,6 +296,8 @@ library community.livecode.trevordevor.htmltidy
         // Diagnostics
         if tResultCode >= 0 then
           put c_tidyRunDiagnostics(tDoc) into tResultCode
+          put c_tidyWarningCount(tDoc) into rWarningCount
+          put c_tidyConfigErrorCount(tDoc) into rErrorCount
         end if
 
         if tResultCode > 1 then
