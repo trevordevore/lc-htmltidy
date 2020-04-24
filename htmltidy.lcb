@@ -5,7 +5,7 @@ library community.livecode.trevordevore.htmltidy
 
   metadata title is "HTML Tidy"
   metadata author is "Trevor DeVore"
-  metadata version is "0.0.1"
+  metadata version is "0.1.0"
 
   public type TidyDoc is Pointer
   -- ctmbstr: https://github.com/htacg/tidy-html5/blob/next/include/tidyplatform.h#L607
